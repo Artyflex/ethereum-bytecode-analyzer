@@ -30,6 +30,7 @@ pip install -e .
 ```bash
 pytest
 pytest --cov=src/bytecode_analyzer
+pytest --cov=src/bytecode_analyzer tests/ --cov-report=term-missing
 ```
 
 ## Development

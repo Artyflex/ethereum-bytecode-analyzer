@@ -216,8 +216,6 @@ def parse_bytecode(bytecode: str) -> dict:
         # Simple opcode (no special handling needed)
         bytes_consumed, opcode_entry, error = _handle_simple_opcode(byte, i)
         opcodes_list.append(opcode_entry)
-        if error:
-            errors.append(error)
         i += bytes_consumed
 
     # Build final result
