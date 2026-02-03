@@ -1,6 +1,19 @@
 """
-Command-line interface for bytecode analyzer.
-Interactive mode for analyzing EVM bytecode.
+Interactive command-line interface.
+
+Terminal-based interface for analyzing EVM bytecode.
+
+Features:
+- Interactive loop for multiple analyses
+- Quit commands (quit, exit, q, Ctrl+C)
+- Input validation with error messages
+- Formatted JSON output
+
+Key functions:
+- run_interactive(): Main loop
+- main(): Entry point
+
+Usage: python -m bytecode_analyzer
 """
 
 from .validator import validate_bytecode, clean_bytecode
@@ -27,6 +40,7 @@ GOODBYE_MESSAGE = "\nThank you for using EVM Bytecode Analyzer!\n"
 # ============================================================================
 # DISPLAY FUNCTIONS
 # ============================================================================
+
 
 def display_welcome():
     """Display welcome message and instructions."""
@@ -71,6 +85,7 @@ def display_validation_success():
 # INPUT FUNCTIONS
 # ============================================================================
 
+
 def get_bytecode_input() -> str:
     """
     Prompt user for bytecode input.
@@ -84,6 +99,7 @@ def get_bytecode_input() -> str:
 # ============================================================================
 # MAIN CLI FUNCTION
 # ============================================================================
+
 
 def run_interactive():
     """

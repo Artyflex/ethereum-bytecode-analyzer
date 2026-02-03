@@ -1,14 +1,28 @@
 """
 EVM bytecode parser.
-Converts bytecode into structured opcode data.
+
+Converts raw bytecode into structured opcode data.
+
+Current limitations (Phase 1):
+- Only PUSH1 arguments are extracted
+- All other OPCODES are recognized but arguments are NOT extracted
+
+Key functions:
+- parse_bytecode(bytecode): Main parser (returns dict)
+- _handle_push1(): Extract PUSH1 with argument
+- _handle_simple_opcode(): Process opcodes without arguments
+- _handle_unknown_byte(): Handle invalid bytes
+
+Uses dispatcher pattern with atomic handlers.
 """
+
 from .opcodes import get_opcode_info
 from .validator import _extract_hex_data
-
 
 # ============================================================================
 # OPCODE CHECKING FUNCTIONS
 # ============================================================================
+
 
 def _is_opcode(byte: int) -> bool:
     """
@@ -26,6 +40,7 @@ def _is_opcode(byte: int) -> bool:
 # ============================================================================
 # SPECIAL OPCODE HANDLERS
 # ============================================================================
+
 
 def _handle_push1(bytecode_bytes: bytes, offset: int) -> tuple[int, dict, str | None]:
     """
@@ -49,7 +64,7 @@ def _handle_push1(bytecode_bytes: bytes, offset: int) -> tuple[int, dict, str | 
         "offset": offset,
         "opcode": opcode_info["name"],
         "value": f"0x{byte:02x}",
-        "description": opcode_info["description"]
+        "description": opcode_info["description"],
     }
 
     # Check if argument is available
@@ -97,6 +112,7 @@ def _requires_special_handling(
 # SIMPLE HANDLERS
 # ============================================================================
 
+
 def _handle_simple_opcode(byte: int, offset: int) -> tuple[int, dict, None]:
     """
     Handle simple opcodes (no arguments).
@@ -114,7 +130,7 @@ def _handle_simple_opcode(byte: int, offset: int) -> tuple[int, dict, None]:
         "offset": offset,
         "opcode": opcode_info["name"],
         "value": f"0x{byte:02x}",
-        "description": opcode_info["description"]
+        "description": opcode_info["description"],
     }
 
     return 1, opcode_entry, None
@@ -135,7 +151,7 @@ def _handle_unknown_byte(byte: int, offset: int) -> tuple[int, dict, str | None]
         "offset": offset,
         "opcode": "UNKNOWN",
         "value": f"0x{byte:02x}",
-        "description": "Unknown byte (not an EVM opcode)"
+        "description": "Unknown byte (not an EVM opcode)",
     }
 
     warning = f"Invalid byte 0x{byte:02x} at offset {offset} (not a valid EVM opcode)"
@@ -146,6 +162,7 @@ def _handle_unknown_byte(byte: int, offset: int) -> tuple[int, dict, str | None]
 # ============================================================================
 # MAIN PARSING FUNCTION (Orchestrator)
 # ============================================================================
+
 
 def parse_bytecode(bytecode: str) -> dict:
     """
@@ -223,8 +240,5 @@ def parse_bytecode(bytecode: str) -> dict:
         "bytecode": f"0x{hex_data}",
         "length": len(bytecode_bytes),
         "opcodes": opcodes_list,
-        "metadata": {
-            "total_opcodes": len(opcodes_list),
-            "parsing_errors": errors
-        }
+        "metadata": {"total_opcodes": len(opcodes_list), "parsing_errors": errors},
     }

@@ -1,13 +1,24 @@
 """
 Bytecode validation and cleaning utilities.
-Each validation rule is implemented as a separate function for clarity and testability.
-"""
-import re
 
+Validates EVM bytecode format with 5 atomic checks:
+1. Type is string
+2. Not empty
+3. Starts with '0x' (mandatory)
+4. Only hex characters (0-9, a-f, A-F)
+5. Even length (2 chars per byte)
+
+Key functions:
+- validate_bytecode(bytecode): Validate format
+- clean_bytecode(bytecode): Normalize (remove spaces, lowercase)
+"""
+
+import re
 
 # ============================================================================
 # VALIDATION FUNCTIONS (Atomic checks)
 # ============================================================================
+
 
 def _validate_is_string(bytecode) -> tuple[bool, str]:
     """
@@ -50,7 +61,7 @@ def _validate_starts_with_0x(bytecode: str) -> tuple[bool, str]:
         Tuple of (is_valid, error_message)
     """
     cleaned = bytecode.strip()
-    if not cleaned.lower().startswith('0x'):
+    if not cleaned.lower().startswith("0x"):
         return False, "Bytecode must start with '0x' prefix"
     return True, ""
 
@@ -66,7 +77,7 @@ def _validate_only_hex_characters(bytecode: str) -> tuple[bool, str]:
     Returns:
         Tuple of (is_valid, error_message)
     """
-    if not re.match(r'^[0-9a-fA-F]+$', bytecode):
+    if not re.match(r"^[0-9a-fA-F]+$", bytecode):
         return False, "Bytecode contains invalid characters (must be hexadecimal: 0-9, a-f, A-F)"
     return True, ""
 
@@ -90,6 +101,7 @@ def _validate_even_length(bytecode: str) -> tuple[bool, str]:
 # ============================================================================
 # MAIN VALIDATION FUNCTION (Orchestrator)
 # ============================================================================
+
 
 def validate_bytecode(bytecode) -> tuple[bool, str]:
     """
@@ -158,6 +170,7 @@ def validate_bytecode(bytecode) -> tuple[bool, str]:
 # CLEANING FUNCTIONS (Atomic operations)
 # ============================================================================
 
+
 def _remove_whitespace(bytecode: str) -> str:
     """
     Remove all whitespace characters (spaces, tabs, newlines).
@@ -168,7 +181,7 @@ def _remove_whitespace(bytecode: str) -> str:
     Returns:
         String without any whitespace
     """
-    return re.sub(r'\s+', '', bytecode)
+    return re.sub(r"\s+", "", bytecode)
 
 
 def _strip_edges(bytecode: str) -> str:
@@ -212,7 +225,7 @@ def _extract_hex_data(bytecode: str) -> str:
         >>> _extract_hex_data("0x6080604052")
         '6080604052'
     """
-    if bytecode.lower().startswith('0x'):
+    if bytecode.lower().startswith("0x"):
         return bytecode[2:]
     return bytecode
 
@@ -220,6 +233,7 @@ def _extract_hex_data(bytecode: str) -> str:
 # ============================================================================
 # MAIN CLEANING FUNCTION (Orchestrator)
 # ============================================================================
+
 
 def clean_bytecode(bytecode: str) -> str:
     """
@@ -252,6 +266,5 @@ def clean_bytecode(bytecode: str) -> str:
 
     # Step 3: Convert to lowercase
     cleaned = _convert_to_lowercase(cleaned)
-
 
     return cleaned

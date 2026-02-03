@@ -1,8 +1,8 @@
 """
 Tests for formatter module.
 """
+
 import json
-import pytest
 from bytecode_analyzer.formatter import format_output
 from bytecode_analyzer.parser import parse_bytecode
 
@@ -21,13 +21,10 @@ class TestFormatOutput:
                     "opcode": "PUSH1",
                     "value": "0x60",
                     "argument": "0x80",
-                    "description": "Place 1 byte item on stack"
+                    "description": "Place 1 byte item on stack",
                 }
             ],
-            "metadata": {
-                "total_opcodes": 1,
-                "parsing_errors": []
-            }
+            "metadata": {"total_opcodes": 1, "parsing_errors": []},
         }
 
         output = format_output(parsed_data)
@@ -37,10 +34,7 @@ class TestFormatOutput:
 
     def test_format_output_default_indent(self):
         """Test that default indentation is 2 spaces."""
-        parsed_data = {
-            "bytecode": "0x00",
-            "opcodes": []
-        }
+        parsed_data = {"bytecode": "0x00", "opcodes": []}
 
         output = format_output(parsed_data)
 
@@ -51,10 +45,7 @@ class TestFormatOutput:
 
     def test_format_output_custom_indent(self):
         """Test formatting with custom indentation."""
-        parsed_data = {
-            "bytecode": "0x00",
-            "opcodes": []
-        }
+        parsed_data = {"bytecode": "0x00", "opcodes": []}
 
         output = format_output(parsed_data, indent=4)
 
@@ -63,10 +54,7 @@ class TestFormatOutput:
 
     def test_format_output_no_indent(self):
         """Test formatting with no indentation (compact)."""
-        parsed_data = {
-            "bytecode": "0x00",
-            "opcodes": []
-        }
+        parsed_data = {"bytecode": "0x00", "opcodes": []}
 
         output = format_output(parsed_data, indent=None)
 
@@ -78,18 +66,8 @@ class TestFormatOutput:
         parsed_data = {
             "bytecode": "0x6080604052",
             "length": 5,
-            "opcodes": [
-                {
-                    "offset": 0,
-                    "opcode": "PUSH1",
-                    "value": "0x60",
-                    "argument": "0x80"
-                }
-            ],
-            "metadata": {
-                "total_opcodes": 1,
-                "parsing_errors": []
-            }
+            "opcodes": [{"offset": 0, "opcode": "PUSH1", "value": "0x60", "argument": "0x80"}],
+            "metadata": {"total_opcodes": 1, "parsing_errors": []},
         }
 
         output = format_output(parsed_data)
@@ -106,12 +84,9 @@ class TestFormatOutput:
             "opcodes": [
                 {"offset": 0, "opcode": "PUSH1", "value": "0x60", "argument": "0x80"},
                 {"offset": 2, "opcode": "PUSH1", "value": "0x60", "argument": "0x40"},
-                {"offset": 4, "opcode": "MSTORE", "value": "0x52"}
+                {"offset": 4, "opcode": "MSTORE", "value": "0x52"},
             ],
-            "metadata": {
-                "total_opcodes": 3,
-                "parsing_errors": []
-            }
+            "metadata": {"total_opcodes": 3, "parsing_errors": []},
         }
 
         output = format_output(parsed_data)
@@ -126,9 +101,7 @@ class TestFormatOutput:
         """Test that unicode characters are preserved."""
         parsed_data = {
             "bytecode": "0x00",
-            "metadata": {
-                "note": "Test with unicode: émojis 🚀 and special chars: é, à, ü"
-            }
+            "metadata": {"note": "Test with unicode: émojis 🚀 and special chars: é, à, ü"},
         }
 
         output = format_output(parsed_data)
@@ -143,10 +116,7 @@ class TestFormatOutput:
             "bytecode": "0x",
             "length": 0,
             "opcodes": [],
-            "metadata": {
-                "total_opcodes": 0,
-                "parsing_errors": []
-            }
+            "metadata": {"total_opcodes": 0, "parsing_errors": []},
         }
 
         output = format_output(parsed_data)

@@ -1,7 +1,15 @@
 """
-EVM Opcodes mapping and utilities.
-Reference: https://evm.codes and Ethereum Yellow Paper
-EVM Version: Shanghai/Cancun
+EVM opcodes mapping and utilities.
+
+Provides comprehensive mapping of 140+ EVM opcodes (Shanghai/Cancun).
+Maps opcode bytes to their names and descriptions.
+
+Key functions:
+- get_opcode_info(byte): Get opcode information
+- is_push_opcode(byte): Check if byte is PUSH opcode
+- get_push_size(byte): Get PUSH argument size
+
+Reference: https://evm.codes
 """
 
 # Complete EVM opcodes mapping

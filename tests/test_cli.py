@@ -2,9 +2,7 @@
 Tests for CLI module.
 """
 
-import pytest
-from unittest.mock import patch, MagicMock
-from io import StringIO
+from unittest.mock import patch
 from bytecode_analyzer.cli import (
     display_welcome,
     display_result,
@@ -13,8 +11,6 @@ from bytecode_analyzer.cli import (
     get_bytecode_input,
     run_interactive,
     main,
-    WELCOME_MESSAGE,
-    GOODBYE_MESSAGE,
 )
 
 
@@ -60,33 +56,33 @@ class TestDisplayFunctions:
 class TestInputFunctions:
     """Test input functions."""
 
-    @patch('builtins.input', return_value='0x6080604052')
+    @patch("builtins.input", return_value="0x6080604052")
     def test_get_bytecode_input_valid(self, mock_input):
         """Test getting valid bytecode input."""
         result = get_bytecode_input()
 
-        assert result == '0x6080604052'
+        assert result == "0x6080604052"
         mock_input.assert_called_once()
 
-    @patch('builtins.input', return_value='quit')
+    @patch("builtins.input", return_value="quit")
     def test_get_bytecode_input_quit(self, mock_input):
         """Test getting quit command."""
         result = get_bytecode_input()
 
-        assert result == 'quit'
+        assert result == "quit"
 
-    @patch('builtins.input', return_value='  0x6080604052  ')
+    @patch("builtins.input", return_value="  0x6080604052  ")
     def test_get_bytecode_input_strips_whitespace(self, mock_input):
         """Test that input is stripped of whitespace."""
         result = get_bytecode_input()
 
-        assert result == '0x6080604052'
+        assert result == "0x6080604052"
 
 
 class TestRunInteractive:
     """Test run_interactive function."""
 
-    @patch('builtins.input', side_effect=['0x6080604052', 'quit'])
+    @patch("builtins.input", side_effect=["0x6080604052", "quit"])
     def test_run_interactive_single_analysis(self, mock_input, capsys):
         """Test interactive mode with single analysis then quit."""
         run_interactive()
@@ -102,7 +98,7 @@ class TestRunInteractive:
         # Verify goodbye message was displayed
         assert "Thank you for using" in captured.out
 
-    @patch('builtins.input', side_effect=['quit'])
+    @patch("builtins.input", side_effect=["quit"])
     def test_run_interactive_immediate_quit(self, mock_input, capsys):
         """Test quitting immediately."""
         run_interactive()
@@ -113,7 +109,7 @@ class TestRunInteractive:
         # Verify goodbye message was displayed
         assert "Thank you for using" in captured.out
 
-    @patch('builtins.input', side_effect=['exit'])
+    @patch("builtins.input", side_effect=["exit"])
     def test_run_interactive_exit_command(self, mock_input, capsys):
         """Test exit command."""
         run_interactive()
@@ -121,7 +117,7 @@ class TestRunInteractive:
 
         assert "Thank you for using" in captured.out
 
-    @patch('builtins.input', side_effect=['q'])
+    @patch("builtins.input", side_effect=["q"])
     def test_run_interactive_q_command(self, mock_input, capsys):
         """Test 'q' command."""
         run_interactive()
@@ -129,7 +125,7 @@ class TestRunInteractive:
 
         assert "Thank you for using" in captured.out
 
-    @patch('builtins.input', side_effect=['', 'quit'])
+    @patch("builtins.input", side_effect=["", "quit"])
     def test_run_interactive_empty_input(self, mock_input, capsys):
         """Test handling of empty input."""
         run_interactive()
@@ -139,7 +135,7 @@ class TestRunInteractive:
         assert "Error" in captured.out
         assert "empty" in captured.out.lower()
 
-    @patch('builtins.input', side_effect=['invalid', 'quit'])
+    @patch("builtins.input", side_effect=["invalid", "quit"])
     def test_run_interactive_invalid_bytecode(self, mock_input, capsys):
         """Test handling of invalid bytecode."""
         run_interactive()
@@ -148,7 +144,7 @@ class TestRunInteractive:
         # Should display error for invalid bytecode
         assert "Error" in captured.out
 
-    @patch('builtins.input', side_effect=['0x60G0', 'quit'])
+    @patch("builtins.input", side_effect=["0x60G0", "quit"])
     def test_run_interactive_invalid_hex_characters(self, mock_input, capsys):
         """Test handling of invalid hex characters."""
         run_interactive()
@@ -157,7 +153,7 @@ class TestRunInteractive:
         assert "Error" in captured.out
         assert "invalid" in captured.out.lower()
 
-    @patch('builtins.input', side_effect=KeyboardInterrupt())
+    @patch("builtins.input", side_effect=KeyboardInterrupt())
     def test_run_interactive_keyboard_interrupt(self, mock_input, capsys):
         """Test handling of Ctrl+C (KeyboardInterrupt)."""
         run_interactive()
@@ -166,7 +162,7 @@ class TestRunInteractive:
         # Should display goodbye message
         assert "Thank you for using" in captured.out
 
-    @patch('builtins.input', side_effect=['0x6080604052', '0x00', 'quit'])
+    @patch("builtins.input", side_effect=["0x6080604052", "0x00", "quit"])
     def test_run_interactive_multiple_analyses(self, mock_input, capsys):
         """Test multiple analyses in one session."""
         run_interactive()
@@ -181,7 +177,7 @@ class TestRunInteractive:
 class TestMainEntryPoint:
     """Test main entry point."""
 
-    @patch('bytecode_analyzer.cli.run_interactive')
+    @patch("bytecode_analyzer.cli.run_interactive")
     def test_main_calls_run_interactive(self, mock_run):
         """Test that main calls run_interactive."""
         result = main()
@@ -189,7 +185,7 @@ class TestMainEntryPoint:
         mock_run.assert_called_once()
         assert result == 0
 
-    @patch('bytecode_analyzer.cli.run_interactive', side_effect=Exception("Test error"))
+    @patch("bytecode_analyzer.cli.run_interactive", side_effect=Exception("Test error"))
     def test_main_handles_exceptions(self, mock_run, capsys):
         """Test that main handles exceptions gracefully."""
         result = main()
@@ -204,7 +200,7 @@ class TestMainEntryPoint:
 class TestCLIIntegration:
     """Integration tests for CLI with other modules."""
 
-    @patch('builtins.input', side_effect=['0x6080604052', 'quit'])
+    @patch("builtins.input", side_effect=["0x6080604052", "quit"])
     def test_cli_complete_workflow(self, mock_input, capsys):
         """Test complete workflow: input -> validate -> parse -> format -> display."""
         run_interactive()
@@ -216,7 +212,7 @@ class TestCLIIntegration:
         assert "0x6080604052" in captured.out
         assert "PUSH1" in captured.out or "opcodes" in captured.out.lower()
 
-    @patch('builtins.input', side_effect=['0x6080604052', 'quit'])
+    @patch("builtins.input", side_effect=["0x6080604052", "quit"])
     def test_cli_accepts_bytecode_with_0x(self, mock_input, capsys):
         """Test that CLI accepts bytecode with 0x prefix."""
         run_interactive()
@@ -226,7 +222,7 @@ class TestCLIIntegration:
         assert "validated successfully" in captured.out.lower()
         assert "Analysis Result" in captured.out
 
-    @patch('builtins.input', side_effect=['0x60', 'quit'])
+    @patch("builtins.input", side_effect=["0x60", "quit"])
     def test_cli_handles_parsing_errors(self, mock_input, capsys):
         """Test CLI handles bytecode with parsing errors (incomplete PUSH1)."""
         run_interactive()

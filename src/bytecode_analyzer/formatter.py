@@ -1,6 +1,13 @@
 """
-Formatter module for bytecode analysis results.
-Converts parsed bytecode data into JSON output.
+JSON formatter for analysis results.
+
+Converts parsed bytecode data to formatted JSON string.
+
+Key function:
+- format_output(parsed_data, indent=2): Format to JSON
+
+Simple implementation for Phase 1.
+Future: YAML/XML support, validation, advanced options (Phase 5).
 """
 
 import json

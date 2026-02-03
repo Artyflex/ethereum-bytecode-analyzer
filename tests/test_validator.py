@@ -2,7 +2,7 @@
 Tests for validator module.
 Tests are organized by function and validation rule.
 """
-import pytest
+
 from bytecode_analyzer.validator import (
     # Main functions
     validate_bytecode,
@@ -19,10 +19,10 @@ from bytecode_analyzer.validator import (
     _extract_hex_data,
 )
 
-
 # ============================================================================
 # TESTS FOR ATOMIC VALIDATION FUNCTIONS
 # ============================================================================
+
 
 class TestValidateIsString:
     """Test _validate_is_string function."""
@@ -192,6 +192,7 @@ class TestValidateEvenLength:
 # TESTS FOR MAIN VALIDATION FUNCTION
 # ============================================================================
 
+
 class TestValidateBytecode:
     """Test the main validate_bytecode function."""
 
@@ -253,6 +254,7 @@ class TestValidateBytecode:
 # ============================================================================
 # TESTS FOR ATOMIC CLEANING FUNCTIONS
 # ============================================================================
+
 
 class TestRemoveWhitespace:
     """Test _remove_whitespace function."""
@@ -330,6 +332,7 @@ class TestConvertToLowercase:
 # TESTS FOR MAIN CLEANING FUNCTION
 # ============================================================================
 
+
 class TestCleanBytecode:
     """Test the main clean_bytecode function."""
 
@@ -364,6 +367,7 @@ class TestCleanBytecode:
 # Hex Data Extraction TESTS
 # ============================================================================
 
+
 class TestExtractHexData:
     """Test the _extract_hex_data utility function."""
 
@@ -386,6 +390,7 @@ class TestExtractHexData:
 # ============================================================================
 # INTEGRATION TESTS
 # ============================================================================
+
 
 class TestValidationCleaningIntegration:
     """Test validation and cleaning together."""
@@ -444,5 +449,3 @@ class TestValidationCleaningIntegration:
         hex_data = _extract_hex_data(cleaned)
         assert hex_data == "6080604052348015600f57600080fd5b50"
         assert not hex_data.startswith("0x")
-
-

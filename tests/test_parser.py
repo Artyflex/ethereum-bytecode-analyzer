@@ -1,7 +1,7 @@
 """
 Tests for parser module.
 """
-import pytest
+
 from bytecode_analyzer.parser import (
     parse_bytecode,
     _is_opcode,
@@ -12,10 +12,10 @@ from bytecode_analyzer.parser import (
 )
 from bytecode_analyzer.opcodes import OPCODES_MAP
 
-
 # ============================================================================
 # TESTS FOR ATOMIC FUNCTIONS
 # ============================================================================
+
 
 class TestIsOpcode:
     """Test _is_opcode function."""
@@ -143,6 +143,7 @@ class TestRequiresSpecialHandling:
 # ============================================================================
 # TESTS FOR MAIN PARSING FUNCTION
 # ============================================================================
+
 
 class TestParseSimpleOpcodes:
     """Test parsing of simple opcodes (no arguments)."""
