@@ -3,13 +3,13 @@ EVM bytecode parser.
 
 Converts raw bytecode into structured opcode data.
 
-Current limitations (Phase 1):
-- Only PUSH1 arguments are extracted
-- All other OPCODES are recognized but arguments are NOT extracted
+Current implementation (Phase 2):
+- All PUSH1-PUSH32 opcodes extract arguments correctly
+- All other opcodes recognized without argument extraction
 
 Key functions:
 - parse_bytecode(bytecode): Main parser (returns dict)
-- _handle_push1(): Extract PUSH1 with argument
+- _handle_push(): Extract PUSH1-PUSH32 with arguments
 - _handle_simple_opcode(): Process opcodes without arguments
 - _handle_unknown_byte(): Handle invalid bytes
 
@@ -42,9 +42,15 @@ def _is_opcode(byte: int) -> bool:
 # ============================================================================
 
 
-def _handle_push1(bytecode_bytes: bytes, offset: int) -> tuple[int, dict, str | None]:
+def _handle_push(bytecode_bytes: bytes, offset: int) -> tuple[int, dict, str | None]:
     """
-    Handle PUSH1 opcode (reads 1-byte argument).
+    Handle PUSH1-PUSH32 opcodes with dynamic argument extraction.
+
+    Extracts arguments for all PUSH opcodes:
+    - PUSH1  (0x60): 1-byte  argument
+    - PUSH2  (0x61): 2-byte  argument
+    - ...
+    - PUSH32 (0x7F): 32-byte argument
 
     Args:
         bytecode_bytes: Full bytecode as bytes
@@ -52,11 +58,13 @@ def _handle_push1(bytecode_bytes: bytes, offset: int) -> tuple[int, dict, str | 
 
     Returns:
         Tuple of (bytes_consumed, opcode_entry, error_message)
-        - bytes_consumed: Number of bytes this opcode uses (2 for PUSH1)
-        - opcode_entry: Dictionary with opcode details
-        - error_message: Error string if any, None otherwise
+        - bytes_consumed: 1 + push_size (opcode + argument bytes)
+        - opcode_entry: Dictionary with opcode details and argument
+        - error_message: Error string if incomplete, None otherwise
     """
     byte = bytecode_bytes[offset]
+    push_size = byte - 0x5F  # PUSH1=1, PUSH2=2, ..., PUSH32=32
+
     opcode_info = get_opcode_info(byte)
 
     # Build base opcode entry
@@ -67,14 +75,17 @@ def _handle_push1(bytecode_bytes: bytes, offset: int) -> tuple[int, dict, str | 
         "description": opcode_info["description"],
     }
 
-    # Check if argument is available
-    if offset + 1 < len(bytecode_bytes):
-        arg_byte = bytecode_bytes[offset + 1]
-        opcode_entry["argument"] = f"0x{arg_byte:02x}"
-        return 2, opcode_entry, None  # Consumed 2 bytes (opcode + argument)
+    # Check if all argument bytes are available
+    if offset + push_size < len(bytecode_bytes):
+        # Extract argument bytes
+        arg_bytes = bytecode_bytes[offset + 1 : offset + 1 + push_size]
+        opcode_entry["argument"] = f"0x{arg_bytes.hex()}"
+        return 1 + push_size, opcode_entry, None
     else:
-        # Incomplete PUSH1 (malformed bytecode)
-        error = f"PUSH1 at offset {offset} is incomplete (missing 1-byte argument)"
+        # Incomplete PUSH (missing argument bytes)
+        error = (
+            f"PUSH{push_size} at offset {offset} is incomplete (missing {push_size}-byte argument)"
+        )
         return 1, opcode_entry, error
 
 
@@ -99,10 +110,8 @@ def _requires_special_handling(
     """
     # Switch-case pattern for special handlers
     match byte:
-        case 0x60:  # PUSH1
-            return _handle_push1(bytecode_bytes, offset)
-
-        # Other OPCODES will be added here
+        case byte if 0x60 <= byte <= 0x7F:  # PUSH1-PUSH32
+            return _handle_push(bytecode_bytes, offset)
 
         case _:  # Default: no special handling needed
             return None
@@ -116,6 +125,10 @@ def _requires_special_handling(
 def _handle_simple_opcode(byte: int, offset: int) -> tuple[int, dict, None]:
     """
     Handle simple opcodes (no arguments).
+
+    This includes all opcodes that do not require argument extraction:
+    - Arithmetic, comparison, stack, memory, storage opcodes
+    - All other opcodes
 
     Args:
         byte: Opcode byte value
@@ -170,7 +183,7 @@ def parse_bytecode(bytecode: str) -> dict:
 
     Current implementation :
     - Parses all EVM opcodes
-    - Handles PUSH1 with 1-byte argument extraction
+    - Handles PUSH1-PUSH32 with full argument extraction
     - Detects invalid bytes (not EVM opcodes)
     - Tracks parsing errors and warnings
 
@@ -185,10 +198,10 @@ def parse_bytecode(bytecode: str) -> dict:
         - metadata: Parsing statistics and errors
 
     Example:
-        >>> parse_bytecode("0x6060604052")
+        >>> parse_bytecode("0x6112346080604052")
         {
-            "bytecode": "0x6060604052",
-            "length": 5,
+            "bytecode": "0x6112346080604052",
+            "length": 8,
             "opcodes": [...],
             "metadata": {"total_opcodes": 3, "parsing_errors": []}
         }
@@ -231,7 +244,7 @@ def parse_bytecode(bytecode: str) -> dict:
             continue
 
         # Simple opcode (no special handling needed)
-        bytes_consumed, opcode_entry, error = _handle_simple_opcode(byte, i)
+        bytes_consumed, opcode_entry, _ = _handle_simple_opcode(byte, i)
         opcodes_list.append(opcode_entry)
         i += bytes_consumed
 

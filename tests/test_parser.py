@@ -5,7 +5,7 @@ Tests for parser module.
 from bytecode_analyzer.parser import (
     parse_bytecode,
     _is_opcode,
-    _handle_push1,
+    _handle_push,
     _handle_simple_opcode,
     _handle_unknown_byte,
     _requires_special_handling,
@@ -36,42 +36,6 @@ class TestIsOpcode:
         assert _is_opcode(0x0F) is False
 
 
-class TestHandlePush1:
-    """Test _handle_push1 function."""
-
-    def test_handle_push1_complete(self):
-        """Test handling complete PUSH1 with argument."""
-        bytecode_bytes = bytes.fromhex("6080")
-        bytes_consumed, opcode_entry, error = _handle_push1(bytecode_bytes, 0)
-
-        assert bytes_consumed == 2
-        assert opcode_entry["offset"] == 0
-        assert opcode_entry["opcode"] == "PUSH1"
-        assert opcode_entry["value"] == "0x60"
-        assert opcode_entry["argument"] == "0x80"
-        assert error is None
-
-    def test_handle_push1_different_argument(self):
-        """Test PUSH1 with different argument values."""
-        bytecode_bytes = bytes.fromhex("60ff")
-        bytes_consumed, opcode_entry, error = _handle_push1(bytecode_bytes, 0)
-
-        assert bytes_consumed == 2
-        assert opcode_entry["argument"] == "0xff"
-        assert error is None
-
-    def test_handle_push1_incomplete(self):
-        """Test handling incomplete PUSH1 (missing argument)."""
-        bytecode_bytes = bytes.fromhex("60")
-        bytes_consumed, opcode_entry, error = _handle_push1(bytecode_bytes, 0)
-
-        assert bytes_consumed == 1
-        assert opcode_entry["opcode"] == "PUSH1"
-        assert "argument" not in opcode_entry
-        assert error is not None
-        assert "incomplete" in error.lower()
-
-
 class TestHandleSimpleOpcode:
     """Test _handle_simple_opcode function."""
 
@@ -93,6 +57,86 @@ class TestHandleSimpleOpcode:
         assert bytes_consumed == 1
         assert opcode_entry["offset"] == 5
         assert opcode_entry["opcode"] == "ADD"
+
+
+class TestHandlePush:
+    """Test _handle_push function for PUSH1-PUSH32."""
+
+    def test_handle_push1_complete(self):
+        """Test handling complete PUSH1 with 1-byte argument."""
+        bytecode_bytes = bytes.fromhex("6080")
+        bytes_consumed, opcode_entry, error = _handle_push(bytecode_bytes, 0)
+
+        assert bytes_consumed == 2
+        assert opcode_entry["opcode"] == "PUSH1"
+        assert opcode_entry["argument"] == "0x80"
+        assert error is None
+
+    def test_handle_push2_complete(self):
+        """Test handling complete PUSH2 with 2-byte argument."""
+        bytecode_bytes = bytes.fromhex("611234")
+        bytes_consumed, opcode_entry, error = _handle_push(bytecode_bytes, 0)
+
+        assert bytes_consumed == 3
+        assert opcode_entry["opcode"] == "PUSH2"
+        assert opcode_entry["argument"] == "0x1234"
+        assert error is None
+
+    def test_handle_push16_complete(self):
+        """Test handling complete PUSH16 with 16-byte argument."""
+        bytecode_bytes = bytes.fromhex("6f" + "ab" * 16)
+        bytes_consumed, opcode_entry, error = _handle_push(bytecode_bytes, 0)
+
+        assert bytes_consumed == 17
+        assert opcode_entry["opcode"] == "PUSH16"
+        assert opcode_entry["argument"] == "0x" + "ab" * 16
+        assert error is None
+
+    def test_handle_push32_complete(self):
+        """Test handling complete PUSH32 with 32-byte argument."""
+        bytecode_bytes = bytes.fromhex("7f" + "ff" * 32)
+        bytes_consumed, opcode_entry, error = _handle_push(bytecode_bytes, 0)
+
+        assert bytes_consumed == 33
+        assert opcode_entry["opcode"] == "PUSH32"
+        assert opcode_entry["argument"] == "0x" + "ff" * 32
+        assert error is None
+
+    def test_handle_push_incomplete(self):
+        """Test handling incomplete PUSH opcodes."""
+        # PUSH2 with only 1 byte of argument
+        bytecode_bytes = bytes.fromhex("6112")
+        bytes_consumed, opcode_entry, error = _handle_push(bytecode_bytes, 0)
+
+        assert bytes_consumed == 1
+        assert opcode_entry["opcode"] == "PUSH2"
+        assert "argument" not in opcode_entry
+        assert error is not None
+        assert "incomplete" in error.lower()
+
+    def test_handle_push32_incomplete(self):
+        """Test handling incomplete PUSH32."""
+        # PUSH32 with only 10 bytes
+        bytecode_bytes = bytes.fromhex("7f" + "ab" * 10)
+        bytes_consumed, opcode_entry, error = _handle_push(bytecode_bytes, 0)
+
+        assert bytes_consumed == 1
+        assert "incomplete" in error.lower()
+        assert "32" in error
+
+    def test_handle_push_offset_calculation(self):
+        """Test that offsets are correctly calculated after PUSH opcodes."""
+        # PUSH2 with argument, then STOP
+        bytecode_bytes = bytes.fromhex("61123400")
+
+        # Parse PUSH2
+        bytes_consumed, _, _ = _handle_push(bytecode_bytes, 0)
+        assert bytes_consumed == 3
+
+        # Next opcode should be at offset 3
+        next_offset = 0 + bytes_consumed
+        assert next_offset == 3
+        assert bytecode_bytes[next_offset] == 0x00  # STOP
 
 
 class TestHandleUnknownByte:
@@ -125,17 +169,31 @@ class TestRequiresSpecialHandling:
         assert opcode_entry["opcode"] == "PUSH1"
         assert opcode_entry["argument"] == "0x80"
 
+    def test_push2_requires_special_handling(self):
+        """Test that PUSH2 is dispatched to special handler."""
+        bytecode_bytes = bytes.fromhex("611234")
+        result = _requires_special_handling(0x61, bytecode_bytes, 0)
+
+        assert result is not None
+        bytes_consumed, opcode_entry, error = result
+        assert bytes_consumed == 3
+        assert opcode_entry["opcode"] == "PUSH2"
+        assert opcode_entry["argument"] == "0x1234"
+
+    def test_push32_requires_special_handling(self):
+        """Test that PUSH32 is dispatched to special handler."""
+        bytecode_bytes = bytes.fromhex("7f" + "ff" * 32)
+        result = _requires_special_handling(0x7F, bytecode_bytes, 0)
+
+        assert result is not None
+        bytes_consumed, opcode_entry, error = result
+        assert bytes_consumed == 33
+        assert opcode_entry["opcode"] == "PUSH32"
+
     def test_simple_opcode_no_special_handling(self):
         """Test that simple opcodes return None."""
         bytecode_bytes = bytes.fromhex("00")
         result = _requires_special_handling(0x00, bytecode_bytes, 0)
-
-        assert result is None
-
-    def test_push2_no_special_handling(self):
-        """Test that PUSH2 has no special handling (Sprint 4)."""
-        bytecode_bytes = bytes.fromhex("61")
-        result = _requires_special_handling(0x61, bytecode_bytes, 0)
 
         assert result is None
 
@@ -455,20 +513,50 @@ class TestParseIntegration:
 
 
 class TestParsePush2ToPush32:
-    """Test that PUSH2-PUSH32 are recognized but not specially handled (Sprint 4)."""
+    """Test that PUSH2-PUSH32 now extract arguments correctly."""
 
-    def test_parse_push2_as_simple_opcode(self):
-        """Test that PUSH2 is recognized but treated as simple opcode."""
-        result = parse_bytecode("0x61")
+    def test_parse_push2_with_argument(self):
+        """Test parsing PUSH2 with 2-byte argument."""
+        result = parse_bytecode("0x611234")
 
         assert len(result["opcodes"]) == 1
         assert result["opcodes"][0]["opcode"] == "PUSH2"
         assert result["opcodes"][0]["value"] == "0x61"
-        assert "argument" not in result["opcodes"][0]
+        assert result["opcodes"][0]["argument"] == "0x1234"
+        assert len(result["metadata"]["parsing_errors"]) == 0
 
-    def test_parse_push32_as_simple_opcode(self):
-        """Test that PUSH32 is recognized but treated as simple opcode."""
-        result = parse_bytecode("0x7f")
+    def test_parse_push32_with_argument(self):
+        """Test parsing PUSH32 with 32-byte argument."""
+        arg = "ab" * 32
+        result = parse_bytecode(f"0x7f{arg}")
 
         assert result["opcodes"][0]["opcode"] == "PUSH32"
-        assert "argument" not in result["opcodes"][0]
+        assert result["opcodes"][0]["argument"] == f"0x{arg}"
+
+    def test_parse_push10_with_argument(self):
+        """Test parsing PUSH10 with 10-byte argument."""
+        result = parse_bytecode("0x69" + "12" * 10)
+
+        assert result["opcodes"][0]["opcode"] == "PUSH10"
+        assert result["opcodes"][0]["argument"] == "0x" + "12" * 10
+
+    def test_parse_multiple_push_opcodes(self):
+        """Test parsing multiple different PUSH opcodes."""
+        # PUSH1, PUSH2, PUSH3
+        result = parse_bytecode("0x608061123462ABCDEF")
+
+        assert len(result["opcodes"]) == 3
+        assert result["opcodes"][0]["opcode"] == "PUSH1"
+        assert result["opcodes"][0]["argument"] == "0x80"
+        assert result["opcodes"][1]["opcode"] == "PUSH2"
+        assert result["opcodes"][1]["argument"] == "0x1234"
+        assert result["opcodes"][2]["opcode"] == "PUSH3"
+        assert result["opcodes"][2]["argument"] == "0xabcdef"
+
+    def test_parse_push_incomplete_error(self):
+        """Test that incomplete PUSH generates error."""
+        result = parse_bytecode("0x6112")  # PUSH2 incomplete
+
+        assert len(result["metadata"]["parsing_errors"]) == 1
+        assert "PUSH2" in result["metadata"]["parsing_errors"][0]
+        assert "incomplete" in result["metadata"]["parsing_errors"][0].lower()

@@ -5,6 +5,7 @@ A Python tool for parsing and analyzing Ethereum Virtual Machine (EVM) bytecode.
 [![Python Version](https://img.shields.io/badge/python-3.9%2B-blue.svg)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/badge/license-GPL%20v3.0-green.svg)](LICENSE)
 [![Tests](https://img.shields.io/badge/tests-passing-brightgreen.svg)](tests/)
+[![Version](https://img.shields.io/badge/version-0.1.0-blue.svg)](https://github.com/Artyflex/ethereum-bytecode-analyzer/releases)
 
 ---
 
