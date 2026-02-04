@@ -3,10 +3,14 @@ Integration tests for bytecode analyzer.
 Tests the complete workflow across all modules.
 """
 
+import json
+import tempfile
+from pathlib import Path
+import subprocess
+import sys
 from bytecode_analyzer.validator import validate_bytecode, clean_bytecode
 from bytecode_analyzer.parser import parse_bytecode
 from bytecode_analyzer.formatter import format_output
-import json
 
 
 class TestEndToEndWorkflow:
@@ -118,6 +122,85 @@ class TestEndToEndWorkflow:
         # Then - Validation should fail
         assert is_valid is False
         assert "empty" in error_msg.lower()
+
+    def test_complete_pipeline_simple_bytecode(self):
+        """Test full pipeline with simple bytecode."""
+        # User input
+        user_input = "  0x60 80 60 40 52  "
+
+        # Clean
+        cleaned = clean_bytecode(user_input)
+        assert cleaned == "0x6080604052"
+
+        # Validate
+        is_valid, error = validate_bytecode(cleaned)
+        assert is_valid is True
+        assert error == ""
+
+        # Parse
+        parsed = parse_bytecode(cleaned)
+        assert parsed["length"] == 5
+        assert len(parsed["opcodes"]) == 3
+        assert parsed["metadata"]["total_opcodes"] == 3
+        assert len(parsed["metadata"]["parsing_errors"]) == 0
+
+        # Format
+        json_output = format_output(parsed)
+        assert "0x6080604052" in json_output
+        assert "PUSH1" in json_output
+
+        # Verify JSON is valid
+        reparsed = json.loads(json_output)
+        assert reparsed["bytecode"] == "0x6080604052"
+
+    def test_complete_pipeline_with_push2_push32(self):
+        """Test full pipeline with PUSH2-PUSH32."""
+        bytecode = "0x61123462ABCDEF7F" + "FF" * 32
+
+        # Clean (already clean)
+        cleaned = clean_bytecode(bytecode)
+
+        # Validate
+        is_valid, _ = validate_bytecode(cleaned)
+        assert is_valid is True
+
+        # Parse
+        parsed = parse_bytecode(cleaned)
+        assert len(parsed["opcodes"]) == 3
+
+        # Verify PUSH2
+        assert parsed["opcodes"][0]["opcode"] == "PUSH2"
+        assert parsed["opcodes"][0]["argument"] == "0x1234"
+
+        # Verify PUSH3
+        assert parsed["opcodes"][1]["opcode"] == "PUSH3"
+        assert parsed["opcodes"][1]["argument"] == "0xabcdef"
+
+        # Verify PUSH32
+        assert parsed["opcodes"][2]["opcode"] == "PUSH32"
+        assert len(parsed["opcodes"][2]["argument"]) == 66  # 0x + 64 chars
+
+    def test_complete_pipeline_with_errors(self):
+        """Test full pipeline with incomplete bytecode."""
+        bytecode = "0x600160"  # Incomplete PUSH1
+
+        cleaned = clean_bytecode(bytecode)
+        is_valid, _ = validate_bytecode(cleaned)
+        assert is_valid is True
+
+        parsed = parse_bytecode(cleaned)
+        assert len(parsed["metadata"]["parsing_errors"]) == 1
+        assert "incomplete" in parsed["metadata"]["parsing_errors"][0].lower()
+
+    def test_complete_pipeline_invalid_bytes(self):
+        """Test full pipeline with invalid bytes."""
+        bytecode = "0x0c0d0e"  # Invalid opcodes
+
+        cleaned = clean_bytecode(bytecode)
+        parsed = parse_bytecode(cleaned)
+
+        assert all(op["opcode"] == "UNKNOWN" for op in parsed["opcodes"])
+        assert len(parsed["metadata"]["parsing_errors"]) == 3
 
 
 class TestModuleIntegration:
@@ -328,3 +411,93 @@ class TestDataConsistency:
 
         # Then - Second serialization should be identical
         assert json_output == json_output2
+
+
+class TestCLIIntegration:
+    """Test CLI integration."""
+
+    def test_cli_bytecode_argument(self):
+        """Test CLI with --bytecode argument."""
+        result = subprocess.run(
+            [sys.executable, "-m", "bytecode_analyzer", "--bytecode", "0x6080604052"],
+            capture_output=True,
+            text=True
+        )
+
+        assert result.returncode == 0
+        assert "0x6080604052" in result.stdout
+        assert "PUSH1" in result.stdout
+
+    def test_cli_file_argument(self):
+        """Test CLI with --file argument."""
+        with tempfile.NamedTemporaryFile(mode="wb", delete=False, suffix=".bin") as f:
+            f.write(bytes.fromhex("6080604052"))
+            temp_path = f.name
+
+        try:
+            result = subprocess.run(
+                [sys.executable, "-m", "bytecode_analyzer", "--file", temp_path],
+                capture_output=True,
+                text=True
+            )
+
+            assert result.returncode == 0
+            assert "0x6080604052" in result.stdout
+        finally:
+            Path(temp_path).unlink()
+
+    def test_cli_output_file_direct(self):
+        """Test CLI with --output argument (direct call to avoid subprocess issues)."""
+        from bytecode_analyzer.cli import parse_arguments, run_cli_mode
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output_path = Path(temp_dir) / "result.json"
+
+            # Direct call instead of subprocess
+            args = parse_arguments([
+                "--bytecode", "0x6080604052",
+                "--output", str(output_path)
+            ])
+
+            exit_code = run_cli_mode(args)
+
+            assert exit_code == 0
+            assert output_path.exists()
+
+            # Verify JSON content
+            content = output_path.read_text(encoding="utf-8")
+            parsed_json = json.loads(content)
+            assert parsed_json["bytecode"] == "0x6080604052"
+
+    def test_cli_compact_mode(self):
+        """Test CLI with --compact flag."""
+        result = subprocess.run(
+            [sys.executable, "-m", "bytecode_analyzer", "--bytecode", "0x6080604052", "--compact"],
+            capture_output=True,
+            text=True
+        )
+
+        assert result.returncode == 0
+        # Compact should have minimal newlines
+        assert result.stdout.strip().count("\n") <= 2
+
+    def test_cli_verbose_mode(self):
+        """Test CLI with --verbose flag."""
+        from bytecode_analyzer.cli import parse_arguments, run_cli_mode
+
+        args = parse_arguments(["--bytecode", "0x6080604052", "--verbose"])
+
+        # Capture output
+        import io
+        import sys
+        old_stdout = sys.stdout
+        sys.stdout = captured_output = io.StringIO()
+
+        try:
+            exit_code = run_cli_mode(args)
+            output = captured_output.getvalue()
+        finally:
+            sys.stdout = old_stdout
+
+        assert exit_code == 0
+        assert "verbose_info" in output
