@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="ethereum-bytecode-analyzer",
-    version="0.2.0",
+    version="0.1.1",
     description="EVM Bytecode Analyzer - Parse and analyze Ethereum smart contract bytecode",
     author="Artyflex",
     author_email="",
