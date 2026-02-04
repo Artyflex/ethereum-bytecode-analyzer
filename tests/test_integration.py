@@ -50,7 +50,7 @@ class TestEndToEndWorkflow:
         cleaned = clean_bytecode(bytecode)
         is_valid, _ = validate_bytecode(cleaned)
         parsed = parse_bytecode(cleaned)
-        json_output = format_output(parsed)
+        format_output(parsed)
 
         # Then
         assert is_valid is True
@@ -93,7 +93,7 @@ class TestEndToEndWorkflow:
         cleaned = clean_bytecode(bytecode)
         is_valid, _ = validate_bytecode(cleaned)
         parsed = parse_bytecode(cleaned)
-        json_output = format_output(parsed)
+        format_output(parsed)
 
         # Then
         assert is_valid is True

@@ -495,3 +495,74 @@ class TestVersion:
 
         captured = capsys.readouterr()
         assert VERSION in captured.out
+
+
+# ============================================================================
+# COVERAGE TESTS (Edge cases and error paths)
+# ============================================================================
+
+
+class TestEdgeCasesAndErrors:
+    """Test edge cases and error handling paths."""
+
+    def test_read_bytecode_from_directory_raises_error(self):
+        """Test that reading from a directory raises ValueError."""
+        with tempfile.TemporaryDirectory() as temp_dir:
+            with pytest.raises(ValueError, match="Not a file"):
+                read_bytecode_from_file(temp_dir)
+
+    def test_write_output_io_error(self, monkeypatch):
+        """Test handling of IOError when writing to file."""
+
+        def mock_open(*args, **kwargs):
+            raise IOError("Permission denied")
+
+        monkeypatch.setattr("builtins.open", mock_open)
+
+        args = parse_arguments(["--bytecode", "0x6080604052", "--output", "test.json"])
+        result = run_cli_mode(args)
+
+        assert result == 1
+
+    def test_run_cli_mode_unexpected_error(self, monkeypatch):
+        """Test handling of unexpected errors in CLI mode."""
+
+        def mock_process(*args, **kwargs):
+            raise RuntimeError("Unexpected error")
+
+        monkeypatch.setattr("bytecode_analyzer.cli.process_bytecode", mock_process)
+
+        args = parse_arguments(["--bytecode", "0x6080604052"])
+        result = run_cli_mode(args)
+
+        assert result == 1
+
+    def test_main_fatal_error(self, monkeypatch):
+        """Test handling of fatal errors in main."""
+
+        def mock_parse_args(*args, **kwargs):
+            raise RuntimeError("Fatal error")
+
+        monkeypatch.setattr("bytecode_analyzer.cli.parse_arguments", mock_parse_args)
+
+        result = main()
+
+        assert result == 1
+
+    def test_run_cli_mode_no_input_error(self, monkeypatch, capsys):
+        """Test error when no input provided to CLI mode (should not happen)."""
+        # Create args manually without bytecode or file
+        import argparse
+        args = argparse.Namespace(
+            bytecode=None,
+            file=None,
+            output=None,
+            compact=False,
+            verbose=False
+        )
+
+        result = run_cli_mode(args)
+        captured = capsys.readouterr()
+
+        assert result == 1
+        assert "No input provided" in captured.out
