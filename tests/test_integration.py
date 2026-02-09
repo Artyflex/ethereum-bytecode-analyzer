@@ -421,7 +421,7 @@ class TestCLIIntegration:
         result = subprocess.run(
             [sys.executable, "-m", "bytecode_analyzer", "--bytecode", "0x6080604052"],
             capture_output=True,
-            text=True
+            text=True,
         )
 
         assert result.returncode == 0
@@ -438,7 +438,7 @@ class TestCLIIntegration:
             result = subprocess.run(
                 [sys.executable, "-m", "bytecode_analyzer", "--file", temp_path],
                 capture_output=True,
-                text=True
+                text=True,
             )
 
             assert result.returncode == 0
@@ -454,10 +454,7 @@ class TestCLIIntegration:
             output_path = Path(temp_dir) / "result.json"
 
             # Direct call instead of subprocess
-            args = parse_arguments([
-                "--bytecode", "0x6080604052",
-                "--output", str(output_path)
-            ])
+            args = parse_arguments(["--bytecode", "0x6080604052", "--output", str(output_path)])
 
             exit_code = run_cli_mode(args)
 
@@ -474,7 +471,7 @@ class TestCLIIntegration:
         result = subprocess.run(
             [sys.executable, "-m", "bytecode_analyzer", "--bytecode", "0x6080604052", "--compact"],
             capture_output=True,
-            text=True
+            text=True,
         )
 
         assert result.returncode == 0
@@ -490,6 +487,7 @@ class TestCLIIntegration:
         # Capture output
         import io
         import sys
+
         old_stdout = sys.stdout
         sys.stdout = captured_output = io.StringIO()
 

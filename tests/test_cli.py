@@ -553,12 +553,9 @@ class TestEdgeCasesAndErrors:
         """Test error when no input provided to CLI mode (should not happen)."""
         # Create args manually without bytecode or file
         import argparse
+
         args = argparse.Namespace(
-            bytecode=None,
-            file=None,
-            output=None,
-            compact=False,
-            verbose=False
+            bytecode=None, file=None, output=None, compact=False, verbose=False
         )
 
         result = run_cli_mode(args)

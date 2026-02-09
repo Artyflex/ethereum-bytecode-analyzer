@@ -13,11 +13,6 @@ A Python tool for parsing and analyzing Ethereum Virtual Machine (EVM) bytecode.
 
 **IMPORTANT:** This tool is in early development (v0.1.1).
 
-**Current Status:**
-- ✅ **PUSH1-PUSH32** opcodes extract arguments correctly
-- ✅ All 140+ EVM opcodes recognized
-- ℹ️ Other opcodes read arguments from stack/memory (not in bytecode)
-
 **Use for educational purposes and experimentation.**
 
 ---
@@ -27,7 +22,7 @@ A Python tool for parsing and analyzing Ethereum Virtual Machine (EVM) bytecode.
 EVM Bytecode Analyzer parses Ethereum smart contract bytecode into human-readable opcode sequences. It extracts PUSH arguments (1-32 bytes), detects invalid bytes, and outputs structured JSON.
 
 **Features:**
-- 140+ EVM opcodes (Shanghai/Cancun)
+- EVM opcodes (Shanghai/Cancun)
 - PUSH1-PUSH32 argument extraction
 - Interactive and CLI modes
 - File input/output (.bin files)
@@ -200,43 +195,9 @@ pytest tests/test_parser.py -v
 ```
 
 **Stats:**
-- 150+ tests
+- 250+ tests
 - 98% coverage
 - All critical paths tested
-
----
-
-## 📊 Project Status
-
-### Phase 1: MVP (v0.1.0) ✅
-
-- [x] Complete EVM opcodes mapping
-- [x] Bytecode validation (format, structure)
-- [x] Basic parser with PUSH1 support
-- [x] JSON output formatter
-- [x] Interactive CLI
-- [x] Comprehensive test suite (100+ tests, >95% coverage)
-- 
-### Phase 1bis: CLI Extensions (v0.1.1) ✅
-
-- [x] PUSH1-PUSH32 argument extraction
-- [x] CLI arguments (--bytecode, --file, --output)
-- [x] Compact and verbose modes
-- [x] Binary file I/O
-- [x] 200+ tests, >95% coverage
-
-### Phase 2: Advanced Analysis 📋
-
-- [ ] Function selector detection
-- [ ] Storage slot analysis
-- [ ] Gas estimation
-- [ ] Control flow analysis
-
-### Phase 3: Web Interface 📋
-
-- [ ] REST API
-- [ ] Web frontend
-- [ ] Online deployment
 
 ---
 
@@ -244,7 +205,7 @@ pytest tests/test_parser.py -v
 
 | Module | Purpose |
 |--------|---------|
-| **opcodes.py** | 140+ EVM opcodes mapping |
+| **opcodes.py** | EVM opcodes mapping |
 | **validator.py** | Bytecode validation (5 checks) |
 | **parser.py** | Bytecode → opcodes with arguments |
 | **formatter.py** | JSON output formatting |
@@ -270,12 +231,6 @@ black src/ tests/         # Format
 flake8 src/ tests/        # Lint
 ```
 
-**Standards:**
-- Python 3.9+
-- Black (100 char lines)
-- Flake8 linting
-- >95% test coverage
-
 ---
 
 ## 📄 License
@@ -288,19 +243,3 @@ flake8 src/ tests/        # Lint
 - ⚠️ No warranty
 
 See [LICENSE](LICENSE) for details.
-
----
-
-## 🙏 Acknowledgments
-
-- [EVM.codes](https://evm.codes) - Opcode reference
-- Ethereum Yellow Paper
-- Python community
-
----
-
-## 📞 Contact
-
-**Issues:** [GitHub Issues](https://github.com/Artyflex/ethereum-bytecode-analyzer/issues)
-
-**Author:** Artyflex
